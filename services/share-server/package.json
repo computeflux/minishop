@@ -1,0 +1,24 @@
+{
+  "name": "minishop-share-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SEO + 社交分享 SSR 服务：为每个店铺生成可被搜索引擎收录、可被微信/TG/X 预览的内容页与分享卡。Bun + Hono。",
+  "scripts": {
+    "dev": "bun run --watch src/server.ts",
+    "start": "bun run src/server.ts",
+    "build": "bun build src/server.ts --target node --outdir dist --minify",
+    "test:chain": "bun run test-chain.ts",
+    "test:list": "bun run test-list.ts"
+  },
+  "dependencies": {
+    "@polkadot/api-contract": "^16.5.2",
+    "@polkadot/types": "^16.5.2",
+    "@polkadot/types-codec": "^16.5.2",
+    "@polkadot/util": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "typescript": "~6.0.2"
+  }
+}

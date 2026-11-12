@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.log
+test-chain.ts
+test-list.ts
+test-http.ts

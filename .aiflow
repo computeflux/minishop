@@ -1,0 +1,9 @@
+# minishop 应用级流程配置（evolve-driver 识别，key: value 行格式）
+#
+# review_ignore: <逗号分隔的 gitignore 风格模式，相对 apps/minishop/>
+#   生成产物不参与 reviewer 评审（通用生成物已内置在 driver 默认表：
+#   package-lock.json / dist / .next / *.abi.json / generated/ / .env* 等）。
+#   不排除的话 reviewer 会对生成物反复报 error，把任务卡在「重修」循环。
+#
+# tokenSol.ts：由 token.sol.abi.json 生成的 viem 封装（不要手改）
+review_ignore: src/contracts/evm/tokenSol.ts

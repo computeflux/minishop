@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>OAuth Callback</title>
+        <style>
+            body {
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                background: #0a0a0a;
+                color: #aaa;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                font-size: 14px;
+            }
+            .spinner {
+                width: 32px;
+                height: 32px;
+                border: 3px solid #333;
+                border-top: 3px solid #2563eb;
+                border-radius: 50%;
+                animation: spin 0.7s linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            .error {
+                color: #ef4444;
+                text-align: center;
+                padding: 20px;
+                display: none;
+            }
+            pre {
+                font-size: 11px;
+                opacity: 0.6;
+                word-break: break-all;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="spinner" id="spinner"></div>
+        <div class="error" id="error"></div>
+        <script>
+            (function () {
+                console.log(
+                    "[oauth callback] loaded, url:",
+                    window.location.href,
+                    "opener:",
+                    !!window.opener,
+                );
+                var el = document.getElementById("error");
+                var spin = document.getElementById("spinner");
+                function show(msg) {
+                    spin.style.display = "none";
+                    el.style.display = "block";
+                    el.innerHTML =
+                        "<p>" +
+                        msg +
+                        "</p><pre>" +
+                        window.location.href +
+                        "</pre>";
+                }
+                try {
+                    var q = new URLSearchParams(window.location.search);
+                    var code = q.get("code");
+                    var qErr = q.get("error");
+
+                    if (code) {
+                        try {
+                            if (window.opener) {
+                                window.opener.postMessage(
+                                    { type: "google_oauth_callback", code: code },
+                                    window.location.origin,
+                                );
+                            } else {
+                                show(
+                                    "No parent window found. Please close this tab and try again.",
+                                );
+                            }
+                        } catch (e) {
+                            show(
+                                "Failed to send result to parent window. Please close this tab and try again.",
+                            );
+                        }
+                        return;
+                    }
+                    if (qErr) {
+                        show("OAuth error: " + qErr);
+                        return;
+                    }
+
+                    // hash 流（Google 开发环境 token 模式）
+                    var h = window.location.hash;
+                    if (!h || h.length < 2) {
+                        show("No code or token in URL");
+                        return;
+                    }
+                    var p = new URLSearchParams(h.slice(1));
+                    var at = p.get("access_token");
+                    var idt = p.get("id_token");
+                    var hErr = p.get("error");
+                    if (hErr) {
+                        show("Google error: " + hErr);
+                        return;
+                    }
+                    if (!at) {
+                        show("No access_token");
+                        return;
+                    }
+                    fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                        headers: { Authorization: "Bearer " + at },
+                    })
+                        .then(function (r) {
+                            if (!r.ok) throw new Error("userinfo " + r.status);
+                            return r.json();
+                        })
+                        .then(function (u) {
+                            ok(
+                                {
+                                    email: u.email || "",
+                                    name: u.name || "",
+                                    profileImage: u.picture || "",
+                                    typeOfLogin: "google",
+                                    authConnection: "google",
+                                    verifier: "google",
+                                    verifierId: u.email || u.sub || "",
+                                },
+                                idt,
+                            );
+                        })
+                        .catch(function (e) {
+                            if (idt) {
+                                try {
+                                    var pl = JSON.parse(
+                                        atob(idt.split(".")[1]),
+                                    );
+                                    ok(
+                                        {
+                                            email: pl.email || "",
+                                            name: pl.name || "",
+                                            profileImage: pl.picture || "",
+                                            typeOfLogin: "google",
+                                            authConnection: "google",
+                                            verifier: "google",
+                                            verifierId:
+                                                pl.email || pl.sub || "",
+                                        },
+                                        idt,
+                                    );
+                                    return;
+                                } catch (_) {}
+                            }
+                            show(e.message || String(e));
+                        });
+                } catch (e) {
+                    show(e.message || String(e));
+                }
+                function ok(u, t) {
+                    try {
+                        if (window.opener) {
+                            window.opener.postMessage(
+                                {
+                                    type: "google_oauth_callback",
+                                    userInfo: u,
+                                    id_token: t,
+                                },
+                                window.location.origin,
+                            );
+                        } else {
+                            show(
+                                "No parent window found. Please close this tab and try again.",
+                            );
+                        }
+                    } catch (e) {
+                        show(
+                            "Failed to send result to parent window. Please close this tab and try again.",
+                        );
+                    }
+                }
+            })();
+        </script>
+    </body>
+</html>

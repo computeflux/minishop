@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/TypeScript/main/lib/tsconfig.schema.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "resolveJsonModule": true,
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "noFallthroughCasesInSwitch": true,
+    "strict": true
+  },
+  "include": ["src"],
+  // SSR 入口（server.tsx / SsrApp.tsx / runner.ts / stubs）由 SSR 构建的 esbuild 编译，
+  // 不参与客户端 bundle；其 Web3AuthProvider 经 vite alias 指向存根（无 config），
+  // 若纳入客户端 tsc 会用真实 web3auth 类型报 "config is missing"。
+  "exclude": ["src/ssr/**"]
+}

@@ -1,0 +1,18 @@
+# Dockerfile.ssr 构建上下文（context = minishop）排除项
+node_modules
+dist
+dist-ssr
+.git
+.gitignore
+*.log
+.env
+.env.*
+!.env.example
+# 独立子项目（app SSR 不需要 share-server）
+services
+# Dockerfile
+Dockerfile*
+*.dockerignore
+# 本地构建产物
+/tmp
+*.tmp

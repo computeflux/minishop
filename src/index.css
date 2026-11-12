@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ── Monochrome "Ink": pure black canvas, white ink ─────────────────
+     唯一的信息维度是白色的透明度：100 / 70 / 45 / 25。
+     没有灰色表面、没有圆角、没有阴影 —— 只有 1px 发丝线。 */
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 0% 72%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 13%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 100%;
+
+    /* grayscale semantic tokens (kept for component compatibility) */
+    --brand: 0 0% 100%;
+    --brand-foreground: 0 0% 0%;
+    --success: 0 0% 88%;
+    --success-foreground: 0 0% 0%;
+    --warning: 0 0% 72%;
+    --warning-foreground: 0 0% 0%;
+    --info: 0 0% 88%;
+    --info-foreground: 0 0% 0%;
+    --surface: 0 0% 4%;
+    --surface-foreground: 0 0% 100%;
+    --subtle: 0 0% 45%;
+    --faint: 0 0% 28%;
+    --dim: 0 0% 18%;
+    --ghost: 0 0% 8%;
+    --overlay: 0 0% 0%;
+  }
+
+  /* .dark is a no-op alias — the app is always "Ink" */
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+      "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+      sans-serif;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+      "Liberation Mono", monospace;
+  }
+
+  ::selection {
+    background: #ffffff;
+    color: #000000;
+  }
+}
+
+/* Hairline scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.3);
+}
+*{
+    scrollbar-color: #fff6 transparent;
+    scrollbar-width: thin;
+}
+@layer components {
+  /* Micro label — uppercase, wide-tracked, mono */
+  .micro-label {
+    @apply font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-white/40;
+  }
+
+  /* Display heading */
+  .display {
+    @apply font-light tracking-[-0.03em] leading-[1.05];
+  }
+
+  /* Data / number value — mono, tabular */
+  .num {
+    @apply font-mono tabular-nums;
+  }
+
+  /* Hairline panel */
+  .panel {
+    @apply border border-white/10 bg-transparent;
+  }
+
+  /* Hoverable hairline panel */
+  .panel-hover {
+    @apply border border-white/10 bg-transparent transition-colors duration-200 hover:border-white/30;
+  }
+
+  /* Focus ring for interactive elements */
+  .focus-ink {
+    @apply outline-none focus-visible:ring-1 focus-visible:ring-white/60;
+  }
+}

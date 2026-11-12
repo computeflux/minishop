@@ -1,0 +1,68 @@
+# syntax=docker/dockerfile:1
+# minishop 应用级 SSR（Home / ShopDetail）多阶段构建。
+#
+# ⚠️ context 必须是 apps/（因 @wetee/web3auth 是 file:../web3auth 本地依赖）：
+#   docker build -f minishop/Dockerfile.ssr -t minishop-ssr:latest apps/
+#
+# 构建阶段：node:20（跑 vite 构建）+ bun（bun install）；运行阶段：oven/bun（SSR 包全量打包，无需 node_modules）。
+# TEE 地址由 minishop/.env.ssr 在构建期 baked 进 SSR 包（buildkit 的 ARG/--build-arg 替换在本环境失效，改用 Vite 原生 .env.ssr）；
+# TEE 地址变更需改 .env.ssr 并重建。
+#
+# 运行：
+#   docker run -p 3000:3000 \
+#     -e SITE_URL=https://yourdomain.com \
+#     -e DEFAULT_LOCALE=en -e TEE_TIMEOUT_MS=15000 \
+#     minishop-ssr:latest
+
+# ===== 基线：node + bun =====
+FROM node:20-bookworm AS base
+ENV BUN_INSTALL=$HOME/.bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH=$BUN_INSTALL/bin:$PATH
+
+# ===== 依赖安装：先装 web3auth（file: 依赖，其 node_modules 供客户端构建打包 web3auth 源码）=====
+# @computeflux/c2c-sdk 也是 file:../c2c/sdk 本地依赖，bun install 需解析到该目录（建 symlink）
+FROM base AS deps
+WORKDIR /app
+COPY minishop/ ./minishop/
+COPY web3auth/ ./web3auth/
+COPY c2c/sdk/ ./c2c/sdk/
+RUN cd web3auth && npm install && cd ../minishop && bun install
+
+# ===== 客户端构建（生成 .vite/manifest.json，SSR 用它精确引用入口 JS / preload / CSS）=====
+# 用 npx vite build（跳过 tsc：tsc 会沿符号链接检查 web3auth 源码；本地 npm run build 仍负责类型检查）
+FROM base AS client
+WORKDIR /app
+COPY minishop/ ./minishop/
+COPY web3auth/ ./web3auth/
+COPY c2c/sdk/ ./c2c/sdk/
+COPY --from=deps /app/minishop/node_modules ./minishop/node_modules
+COPY --from=deps /app/web3auth/node_modules ./web3auth/node_modules
+RUN cd minishop && npx vite build
+
+# ===== SSR 构建（VITE_API_* 由 .env.ssr 注入 import.meta.env；缺此则 getTeeProviderBase 返回空 → /gql 解析失败）=====
+FROM base AS ssr
+WORKDIR /app
+COPY minishop/ ./minishop/
+COPY web3auth/ ./web3auth/
+COPY c2c/sdk/ ./c2c/sdk/
+COPY --from=deps /app/minishop/node_modules ./minishop/node_modules
+RUN cd minishop && npx vite build --mode ssr
+
+# ===== 运行阶段 =====
+# SSR 包全量打包（vite build --mode ssr 无 external），运行时只需 bun，无需 node / node_modules。
+FROM oven/bun:1-slim AS runtime
+WORKDIR /app/minishop
+COPY --from=ssr /app/minishop/dist-ssr ./dist-ssr
+# 客户端 manifest（asset 链接）+ ABI（SSR 读店铺合约数据）+ runner
+COPY --from=client /app/minishop/dist/.vite/manifest.json ./dist/.vite/manifest.json
+COPY --from=client /app/minishop/public/contract/gateway.json ./public/contract/gateway.json
+COPY --from=ssr /app/minishop/src/ssr/runner.ts ./src/ssr/runner.ts
+# ABI_DIR：SSR 从 public/contract/*.json 读 ABI（默认 /app/minishop/public）
+# CLIENT_MANIFEST_PATH：客户端 manifest（默认 /app/minishop/dist/.vite/manifest.json）
+ENV ABI_DIR=/app/minishop/public \
+    CLIENT_MANIFEST_PATH=/app/minishop/dist/.vite/manifest.json \
+    PORT=3000 \
+    DEFAULT_LOCALE=en
+EXPOSE 3000
+CMD ["bun", "run", "src/ssr/runner.ts"]
